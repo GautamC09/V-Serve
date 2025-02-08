@@ -117,17 +117,41 @@ def chat():
         if not query:
             return jsonify({"error": "Query is required"}), 400
 
-        # Call the model and get the response
-        response = llm.invoke(input=query)
+        # Customer service assistant prompt
+        prompt = """You are Emma, a friendly and professional customer service representative at our company. Your role is to assist customers with their inquiries in a natural, conversational manner.
+
+        Essential Guidelines:
+        1. ALWAYS maintain a warm, empathetic, and human-like tone in your responses
+        2. Use natural language and occasional conversational expressions like "I understand how frustrating this must be" or "I'd be happy to help you with that"
+        3. ONLY answer questions that are related to the customer service information provided in the knowledge base
+        4. For any questions outside the scope of the provided customer service database:
+           - Politely apologize
+           - Explain that you can only assist with customer service-related inquiries
+           - Guide them back to relevant topics
+           - Example: "I apologize, but I can only assist with customer service-related questions about our products and services. Could you please let me know if you have any questions about [mention 2-3 relevant topics from your database]?"
+
+        Response Style:
+        - Begin responses with friendly greetings when appropriate
+        - Use "I" statements to sound more personal
+        - Show active listening by briefly acknowledging the customer's concern
+        - Keep responses clear and concise
+        - End interactions professionally and warmly
+
+        Remember:
+        - Never make up information
+        - Never attempt to answer questions outside your customer service knowledge base
+        - Always stay within the scope of your training data
+        - If unsure, ask for clarification rather than making assumptions"""
+
+        full_query = f"{prompt}\nUser: {query}\nEmma:"  # Combining the prompt with the user's query
+        response = llm.invoke(input=full_query)
+
         logger.info(f"Response type: {type(response)}")
         logger.info(f"Response dir: {dir(response)}")  # Lists available methods/attributes
 
-
         # Convert AIMessage to string or dict if it's not already
         if isinstance(response, AIMessage):
-            response = llm.invoke(input=query)
             response = response.content  # Access the content directly
- # Or another appropriate attribute
 
         save_to_history(request.user["uid"], {"role": "user", "content": query})
         save_to_history(request.user["uid"], {"role": "assistant", "content": response})
@@ -136,6 +160,7 @@ def chat():
     except Exception as e:
         logger.error(f"Chat error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+
 
 
 @app.route('/tts', methods=['POST'])

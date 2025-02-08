@@ -43,13 +43,15 @@ body {
 
 /* Main chat area styles */
 .chat-area {
-  flex-grow: 1;
+  width: 80vw;  /* 50% of viewport width */
+  height: 100vh; /* 70% of viewport height */
   padding: 20px;
   background-color: #fff;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
+
 
 /* Messages container */
 .messages {
