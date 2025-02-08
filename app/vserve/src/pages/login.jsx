@@ -3,6 +3,10 @@ import { auth } from "../firebaseConfig"; // Import Firebase auth
 import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
 import "./login.css";
+import { doc, setDoc, getFirestore } from "firebase/firestore";
+
+const db = getFirestore();
+
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -42,10 +46,24 @@ const Login = () => {
 
   const handleAuth = async () => {
     try {
-      const userCredential = isSignUp 
-        ? await createUserWithEmailAndPassword(auth, email, password)
-        : await signInWithEmailAndPassword(auth, email, password);
+      let userCredential;
+  
+      if (isSignUp) {
+        if (password !== confirmPassword) {
+          alert("Passwords do not match!");
+          return;
+        }
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
         
+        // Save user ID to Firestore under /Chat Saves/
+        await setDoc(doc(db, "Chat Saves", userCredential.user.uid), {
+          email: userCredential.user.email,
+          createdAt: new Date(),
+        });
+      } else {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      }
+  
       await userCredential.user.getIdToken();
       navigate("/chat");
     } catch (error) {

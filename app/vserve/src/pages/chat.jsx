@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { auth } from "../firebaseConfig"; // Import Firebase auth
-import { onAuthStateChanged } from "firebase/auth"; // Import onAuthStateChanged from Firebase
+import { auth } from "../firebaseConfig";
+import { onAuthStateChanged, signOut } from "firebase/auth"; // Import signOut
 import "./chat.css";
 
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [chats, setChats] = useState([]); // To store the list of previous chats
-  const [messages, setMessages] = useState([]); // To store current chat messages
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if the user is authenticated
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        navigate("/login");  // Redirect to login if not authenticated
+        navigate("/login");
       }
     });
 
-    // Fetch chat history when the component loads
     const fetchChatHistory = async () => {
       try {
         const token = await auth.currentUser?.getIdToken();
@@ -30,7 +28,7 @@ const Chat = () => {
         const response = await axios.get("http://localhost:5000/history", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setChats(response.data.history); // Update with chat list
+        setChats(response.data.history);
       } catch (error) {
         console.error(error);
       }
@@ -38,10 +36,18 @@ const Chat = () => {
 
     fetchChatHistory();
 
-    return () => unsubscribe(); // Cleanup the listener on component unmount
+    return () => unsubscribe();
   }, [navigate]);
 
-  // Function to load previous chats
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login"); // Redirect to login after signing out
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+  };
+
   const loadChat = (chat) => {
     setMessages(chat.messages);
   };
@@ -61,7 +67,7 @@ const Chat = () => {
         { text: message, role: "user" },
         { text: response.data.response, role: "assistant" },
       ]);
-      setMessage(""); // Clear the input field after sending message
+      setMessage("");
     } catch (error) {
       console.error(error);
     } finally {
@@ -74,6 +80,9 @@ const Chat = () => {
       {/* Side Panel */}
       <div className="side-panel">
         <h3>Chats</h3>
+        <button className="sign-out-btn" onClick={handleSignOut}>
+          Sign Out
+        </button>
         <div className="chat-list">
           {chats.map((chat, index) => (
             <div key={index} className="chat-item" onClick={() => loadChat(chat)}>
