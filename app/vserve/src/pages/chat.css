@@ -35,23 +35,89 @@ body {
   padding: 10px;
   cursor: pointer;
   border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chat-item:hover {
   background-color: #e1e1e1;
 }
 
+.chat-item.active {
+  background-color: #e6e6e6;
+}
+
+/* Chat item menu styles */
+.menu-container {
+  position: relative;
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 18px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.menu-button:hover {
+  color: #333;
+  background-color: transparent;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 120px;
+}
+
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-menu button:hover {
+  background-color: #f0f0f0;
+  color: #007bff;
+}
+
+/* Chat input styles */
+.chat-input {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
 /* Main chat area styles */
 .chat-area {
-  width: 80vw;  /* 50% of viewport width */
-  height: 100vh; /* 70% of viewport height */
+  width: 80vw;
+  height: 100vh;
   padding: 20px;
   background-color: #fff;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
-
 
 /* Messages container */
 .messages {
@@ -90,9 +156,9 @@ textarea {
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #ddd;
-  height: 50px; /* Fixed height */
-  resize: none; /* Disable resizing */
-  overflow-y: auto; /* Add scrollbar when content overflows */
+  height: 50px;
+  resize: none;
+  overflow-y: auto;
 }
 
 button {

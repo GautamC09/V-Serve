@@ -15,16 +15,16 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate(); // Initialize useNavigate hook
 
-  useEffect(() => {
-    // Redirect to /chat if the user is already logged in
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navigate("/chat");
-      }
-    });
+  // useEffect(() => {
+  //   // Redirect to /chat if the user is already logged in
+  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
+  //     if (user) {
+  //       navigate("/chat");
+  //     }
+  //   });
 
-    return () => unsubscribe(); // Cleanup the listener on component unmount
-  }, [navigate]);
+  //   return () => unsubscribe(); // Cleanup the listener on component unmount
+  // }, [navigate]);
 
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
@@ -47,7 +47,6 @@ const Login = () => {
   const handleAuth = async () => {
     try {
       let userCredential;
-  
       if (isSignUp) {
         if (password !== confirmPassword) {
           alert("Passwords do not match!");
@@ -55,10 +54,11 @@ const Login = () => {
         }
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         
-        // Save user ID to Firestore under /Chat Saves/
+        // Save user ID and email to Firestore
         await setDoc(doc(db, "chat_saves", userCredential.user.uid), {
           email: userCredential.user.email,
           createdAt: new Date(),
+          chats: [], // Initialize empty chats array
         });
       } else {
         userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -70,7 +70,7 @@ const Login = () => {
       alert(error.message);
     }
   };
-
+  
   return (
     <div className="container">
       <div className="left-section">
