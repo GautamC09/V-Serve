@@ -97,7 +97,7 @@ const Login = () => {
       </div>
 
       <div className="right-section">
-        <img src="/customer-service-representative-csr.png" alt="Welcome" className="banner-image" />
+      <img src="/customer-service-representative-csr.png" alt="Welcome" className="banner-image" />
         <div className="overlay-text">
           <h2>{isSignUp ? "Join us today!" : "Bring your ideas to life."}</h2>
           <p>Sign up for free and enjoy access to all features for 30 days. No credit card required.</p>
