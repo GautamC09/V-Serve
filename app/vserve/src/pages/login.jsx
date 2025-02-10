@@ -56,7 +56,7 @@ const Login = () => {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         
         // Save user ID to Firestore under /Chat Saves/
-        await setDoc(doc(db, "Chat Saves", userCredential.user.uid), {
+        await setDoc(doc(db, "chat_saves", userCredential.user.uid), {
           email: userCredential.user.email,
           createdAt: new Date(),
         });
