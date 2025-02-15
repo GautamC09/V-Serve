@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 
 
+.venv 
+
 # Node modules
 node_modules/
 
