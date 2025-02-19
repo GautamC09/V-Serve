@@ -295,6 +295,9 @@ const Chat = () => {
           <button onClick={handleSendMessage} disabled={loading || !message.trim()}>
             ⬆️
           </button>
+          <button onClick={() => {}}>
+            End
+          </button>
         </div>
       </div>
     </div>

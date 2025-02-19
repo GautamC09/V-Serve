@@ -11,6 +11,8 @@ from langchain_groq import ChatGroq
 from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate, MessagesPlaceholder
 from dotenv import load_dotenv
 from langchain.schema import AIMessage
+from sentence_transformers import SentenceTransformer
+from pinecone import Pinecone, ServerlessSpec
 
 
 # Load environment variables
@@ -47,8 +49,34 @@ except Exception as e:
 
 # Define AI chat prompts
 system_msg_template = SystemMessagePromptTemplate.from_template(
-    template=os.getenv("SYSTEM_PROMPT", "You are a helpful AI assistant.")
-)
+    template=os.getenv("SYSTEM_PROMPT",''' "You are Emma, a friendly and professional customer service representative at our company. Your role is to assist customers with their inquiries in a natural, conversational manner.
+                                        Essential Guidelines:
+                                        1. ALWAYS maintain a warm, empathetic, and human-like tone in your responses
+                                        2. Use natural language and occasional conversational expressions like "I understand how frustrating this must be" or "I'd be happy to help you with that"
+                                        3. ONLY answer questions that are related to the customer service information provided in the knowledge base
+                                        4. For any questions outside the scope of the provided customer service database:
+                                        - Politely apologize
+                                        - Explain that you can only assist with customer service-related inquiries
+                                        - Guide them back to relevant topics
+                                        - Example: "I apologize, but I can only assist with customer service-related questions about our products and services. Could you please let me know if you have any questions about [mention 2-3 relevant topics from your database]?"
+
+                                        Response Style:
+                                        - Begin responses with friendly greetings when appropriate
+                                        - Use "I" statements to sound more personal
+                                        - Show active listening by briefly acknowledging the customer's concern
+                                        - Keep responses clear and concise
+                                        - End interactions professionally and warmly
+
+                                        Remember:
+                                        - Never make up information
+                                        - Never attempt to answer questions outside your customer service knowledge base
+                                        - Always stay within the scope of your training data
+                                        - If unsure, ask for clarification rather than making assumptions
+
+                                        Example interaction:
+                                        Customer: "What's the weather like today?"
+                                        You: "I apologize, but I'm specifically here to help with customer service matters related to our products and services. I'd be happy to assist you with questions about our return policy, product features, or account management instead. What can I help you with?"''')
+                                        )
 human_msg_template = HumanMessagePromptTemplate.from_template(template="{input}")
 prompt_template = ChatPromptTemplate.from_messages([
     system_msg_template,
@@ -104,10 +132,44 @@ def verify_token():
     except Exception as e:
         return jsonify({"error": str(e)}), 401
 
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Pinecone
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+
+# Check if the index exists, otherwise use the existing one
+index_name = "test3"
+if index_name not in pc.list_indexes().names():
+    pc.create_index(
+        name=index_name, 
+        dimension=1536, 
+        metric='euclidean',
+        spec=ServerlessSpec(cloud='aws', region='us-west-2')
+    )
+
+# Access the Pinecone index
+index = pc.Index(index_name)
+
+def find_match(input_text):
+    """Retrieve the most relevant context from Pinecone."""
+    input_embedding = embedding_model.encode(input_text).tolist()
+    result = index.query(vector=input_embedding, top_k=2, include_metadata=True)
+    
+    # Ensure there are at least 2 matches
+    if len(result["matches"]) >= 2:
+        return result["matches"][0]["metadata"]["text"] + "\n" + result["matches"][1]["metadata"]["text"]
+    elif len(result["matches"]) == 1:
+        return result["matches"][0]["metadata"]["text"]
+    else:
+        return "No relevant context found."
+
 @app.route('/chat', methods=['POST'])
 @firebase_auth_required
 def chat():
-    """AI Chat API using LangChain."""
+    """AI Chat API using LangChain with Pinecone-based RAG."""
     try:
         data = request.get_json()
         if not data:
@@ -117,54 +179,54 @@ def chat():
         if not query:
             return jsonify({"error": "Query is required"}), 400
 
-        # Customer service assistant prompt
-        prompt = """You are Emma, a friendly and professional customer service representative at our company. Your role is to assist customers with their inquiries in a natural, conversational manner.
+        # Retrieve relevant context from Pinecone
+        context = find_match(query)
 
-Essential Guidelines:
-1. ALWAYS maintain a warm, empathetic, and human-like tone in your responses
-2. Use natural language and occasional conversational expressions like "I understand how frustrating this must be" or "I'd be happy to help you with that"
-3. ONLY answer questions that are related to the customer service information provided in the knowledge base
-4. For any questions outside the scope of the provided customer service database:
-   - Politely apologize
-   - Explain that you can only assist with customer service-related inquiries
-   - Guide them back to relevant topics
-   - Example: "I apologize, but I can only assist with customer service-related questions about our products and services. Could you please let me know if you have any questions about [mention 2-3 relevant topics from your database]?"
+        # Construct the prompt with retrieved context
+        full_query = f'''"Use the following context to answer the question: "You are Emma, a friendly and professional customer service representative at our company. Your role is to assist customers with their inquiries in a natural, conversational manner.
+                                        Essential Guidelines:
+                                        1. ALWAYS maintain a warm, empathetic, and human-like tone in your responses
+                                        2. Use natural language and occasional conversational expressions like "I understand how frustrating this must be" or "I'd be happy to help you with that"
+                                        3. ONLY answer questions that are related to the customer service information provided in the knowledge base
+                                        4. For any questions outside the scope of the provided customer service database:
+                                        - Politely apologize
+                                        - Explain that you can only assist with customer service-related inquiries
+                                        - Guide them back to relevant topics
+                                        - Example: "I apologize, but I can only assist with customer service-related questions about our products and services. Could you please let me know if you have any questions about [mention 2-3 relevant topics from your database]?"
 
-Response Style:
-- Begin responses with friendly greetings when appropriate
-- Use "I" statements to sound more personal
-- Show active listening by briefly acknowledging the customer's concern
-- Keep responses clear and concise
-- End interactions professionally and warmly
+                                        Response Style:
+                                        - Begin responses with friendly greetings when appropriate
+                                        - Use "I" statements to sound more personal
+                                        - Show active listening by briefly acknowledging the customer's concern
+                                        - Keep responses clear and concise
+                                        - End interactions professionally and warmly
 
-Remember:
-- Never make up information
-- Never attempt to answer questions outside your customer service knowledge base
-- Always stay within the scope of your training data
-- If unsure, ask for clarification rather than making assumptions
+                                        Remember:
+                                        - Never make up information
+                                        - Never attempt to answer questions outside your customer service knowledge base
+                                        - Always stay within the scope of your training data
+                                        - If unsure, ask for clarification rather than making assumptions
 
-Example interaction:
-Customer: "What's the weather like today?"
-You: "I apologize, but I'm specifically here to help with customer service matters related to our products and services. I'd be happy to assist you with questions about our return policy, product features, or account management instead. What can I help you with?"""
+                                        Example interaction:
+                                        Customer: "What's the weather like today?"
+                                        You: "I apologize, but I'm specifically here to help with customer service matters related to our products and services. I'd be happy to assist you with questions about our return policy, product features, or account management instead. What can I help you with?"\n\n{context}\n\nUser: {query}\nAI:"'''
 
-        full_query = f"{prompt}\nUser: {query}\nEmma:"  # Combining the prompt with the user's query
+        # Get AI response using LangChain
         response = llm.invoke(input=full_query)
 
-        logger.info(f"Response type: {type(response)}")
-        logger.info(f"Response dir: {dir(response)}")  # Lists available methods/attributes
-
-        # Convert AIMessage to string or dict if it's not already
+        # Convert AIMessage to string if necessary
         if isinstance(response, AIMessage):
-            response = response.content  # Access the content directly
+            response = response.content
 
+        # Save chat history
         save_to_history(request.user["uid"], {"role": "user", "content": query})
         save_to_history(request.user["uid"], {"role": "assistant", "content": response})
 
         return jsonify({"response": response})
+
     except Exception as e:
         logger.error(f"Chat error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
-
 
 
 @app.route('/tts', methods=['POST'])
