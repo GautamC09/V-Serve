@@ -90,7 +90,7 @@ const Login = () => {
 
         <button className="login-btn" onClick={handleAuth}>{isSignUp ? "Sign Up" : "Sign In"}</button>
 
-        <p>
+        <p style={{ color: "black" }}>
           {isSignUp ? "Already have an account?" : "Don't have an account?"}  
           <button className="link-btn" onClick={toggleForm}>{isSignUp ? "Sign in" : "Sign up"}</button>
         </p>
