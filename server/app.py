@@ -40,7 +40,7 @@ except Exception as e:
 # Initialize Chat Model
 try:
     llm = ChatGroq(
-        model=os.getenv("GROQ_MODEL", "mixtral-8x7b-32768"),
+        model=os.getenv("GROQ_MODEL", "qwen-qwq-32b"),
         api_key=os.getenv("GROQ_API_KEY")
     )
 except Exception as e:
