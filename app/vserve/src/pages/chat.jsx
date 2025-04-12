@@ -102,7 +102,7 @@ const Chat = () => {
     try {
       const token = await auth.currentUser?.getIdToken();
       const response = await axios.post(
-        "http://127.0.0.1:5000/chat",
+        "https://GautamChaudhari-Vserve.hf.space/chat",
         { query: message },
         { headers: { Authorization: `Bearer ${token}` } }
       );
