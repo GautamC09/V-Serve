@@ -104,7 +104,13 @@ const Chat = () => {
       const response = await axios.post(
         "https://GautamChaudhari-Vserve.hf.space/chat",
         { query: message },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          withCredentials: true
+        }
       );
 
       const userMessage = { text: message, role: "user" };
