@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+firebase-admin
+langchain
+langchain_groq
+python-dotenv
+sentence-transformers
+pinecone
+apscheduler

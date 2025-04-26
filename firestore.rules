@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Function to check if user is admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/chat_saves/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/chat_saves/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Combined chat_saves rules
+    match /chat_saves/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Tickets collection rules
+    match /tickets/{ticketId} {
+      // Allow ticket creation by authenticated users
+      allow create: if request.auth != null;
+      
+      // Allow read access to admins only
+      allow read: if request.auth != null && isAdmin();
+      
+      // Allow update/delete by admins only
+      allow update, delete: if request.auth != null && isAdmin();
+    }
+  }
+} 

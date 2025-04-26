@@ -14,6 +14,7 @@ import {
   getFirestore,
   setDoc,
 } from "firebase/firestore";
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import "./chat.css";
 
 const db = getFirestore();
@@ -30,6 +31,19 @@ const Chat = () => {
   const [menuOpen, setMenuOpen] = useState(null);
   const menuRef = useRef(null);
   const navigate = useNavigate();
+
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition
+  } = useSpeechRecognition();
+
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) {
+      console.warn("Browser does not support speech recognition.");
+    }
+  }, [browserSupportsSpeechRecognition]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -60,11 +74,11 @@ const Chat = () => {
       const docRef = doc(db, "chat_saves", uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const userChats = docSnap.data().chats || [];
+        const userChats = Array.isArray(docSnap.data().chats) ? docSnap.data().chats : [];
         setChats(userChats);
         if (userChats.length > 0) {
           setCurrentChatId(userChats[0].id);
-          setMessages(userChats[0].messages);
+          setMessages(userChats[0].messages || []);
         }
       }
     } catch (error) {
@@ -96,33 +110,53 @@ const Chat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message || !message.trim()) {
+      alert("Please enter a message");
+      console.log("Message is empty or undefined");
+      return;
+    }
+    if (!userId) {
+      alert("User not authenticated. Please sign in again.");
+      navigate("/login");
+      return;
+    }
     setLoading(true);
-
+  
     try {
       const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("User not authenticated");
+      }
       const response = await axios.post(
-        "http://127.0.0.1:5000/chat",
+        "https://GautamChaudhari-Vserve.hf.space/chat",
         { query: message },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          withCredentials: true
+        }
       );
-
+  
       const userMessage = { text: message, role: "user" };
       const botResponse = { text: response.data.response, role: "assistant" };
       const updatedMessages = [...messages, userMessage, botResponse];
-
+  
       setMessages(updatedMessages);
-
+  
       const docRef = doc(db, "chat_saves", userId);
       const docSnap = await getDoc(docRef);
-      const userChats = docSnap.exists() ? docSnap.data().chats : [];
-
+      const userChats = docSnap.exists() && Array.isArray(docSnap.data().chats)
+        ? docSnap.data().chats
+        : [];
+  
       let updatedChats = [];
-
+  
       if (!currentChatId) {
         const chatId = Date.now().toString();
         const chatTitle = message.slice(0, 20) || "Untitled Chat";
-
+  
         const newChat = { id: chatId, title: chatTitle, messages: updatedMessages };
         updatedChats = [...userChats, newChat];
         setCurrentChatId(chatId);
@@ -131,12 +165,26 @@ const Chat = () => {
           chat.id === currentChatId ? { ...chat, messages: updatedMessages } : chat
         );
       }
-
+  
       await updateDoc(docRef, { chats: updatedChats });
       setChats(updatedChats);
       setMessage("");
     } catch (error) {
       console.error("Message send error:", error);
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Server responded with a status other than 2xx
+          alert(`Failed to send message: ${error.response.data.error || "Server error"}`);
+        } else if (error.request) {
+          // No response received (e.g., network error)
+          alert("Failed to send message: Unable to reach the server. Please check your network connection.");
+        } else {
+          // Error setting up the request
+          alert(`Failed to send message: ${error.message}`);
+        }
+      } else {
+        alert("Failed to send message. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -188,6 +236,21 @@ const Chat = () => {
     setEditingChatId(null);
   };
 
+  const toggleVoiceInput = () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+      resetTranscript();
+    } else {
+      SpeechRecognition.startListening({ continuous: true });
+    }
+  };
+
+  useEffect(() => {
+    if (transcript) {
+      setMessage(transcript);
+    }
+  }, [transcript]);
+
   return (
     <div className="chat-container">
       <div className="side-panel">
@@ -230,7 +293,7 @@ const Chat = () => {
                 <span
                   onClick={() => {
                     setCurrentChatId(chat.id);
-                    setMessages(chat.messages);
+                    setMessages(chat.messages || []);
                   }}
                 >
                   {chat.title}
@@ -295,8 +358,19 @@ const Chat = () => {
           <button onClick={handleSendMessage} disabled={loading || !message.trim()}>
             ⬆️
           </button>
-          <button onClick={() => {}}>
-            End
+          <button onClick={toggleVoiceInput} disabled={loading}>
+            {listening ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1v22M17 5h-1.5a3.5 3.5 0 0 0 0 7H17a3.5 3.5 0 0 1 0 7h-1.5M7 5H5.5a3.5 3.5 0 0 0 0 7H7a3.5 3.5 0 0 1 0 7H5.5"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+                <line x1="8" y1="22" x2="16" y2="22"/>
+              </svg>
+            )}
           </button>
         </div>
       </div>

@@ -1,58 +1,26 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Ignore virtual environments
+.venv/
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-
-.venv 
+# Ignore environment files
+.env
+server/.env
 
 # Node modules
 node_modules/
 
-# Environment variable files
-.env
-
-# Firebase credentials (keep this private)
-firebase-key.json
+# Mac system files
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
 
-# Build output
-build/
+# Build
 dist/
-
-# IDE/editor files
-.vscode/
-.idea/
-
-# OS-specific files
-.DS_Store
-Thumbs.db
-
-# Coverage directory for tests (if you have any tests)
+build/
 coverage/
 
-# Temporary files
-*.tmp
-*.swp
+# IDE/editor
+.vscode/
+.idea/
+server/firebase-key.json

@@ -17,6 +17,10 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [address, setAddress] = useState("");
+  const [contactNo, setContactNo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -27,6 +31,10 @@ const Login = () => {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
+    setFirstName("");
+    setLastName("");
+    setAddress("");
+    setContactNo("");
     setError(null);
   };
 
@@ -71,6 +79,10 @@ const Login = () => {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, "chat_saves", userCredential.user.uid), {
           email: userCredential.user.email,
+          firstName: firstName,
+          lastName: lastName,
+          address: address,
+          contactNo: contactNo,
           role: "user",
           createdAt: new Date(),
         });
@@ -111,34 +123,83 @@ const Login = () => {
 
         <div className="divider">or</div>
 
-        <input
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={loading}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-        />
-        {isSignUp && (
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={loading}
-          />
+        {isSignUp ? (
+          <>
+            <div className="form-row">
+              <input
+                type="text"
+                placeholder="First Name *"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                disabled={loading}
+              />
+              <input
+                type="text"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <input
+              type="email"
+              placeholder="Email address *"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+            />
+            <input
+              type="password"
+              placeholder="Password *"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+            <input
+              type="password"
+              placeholder="Confirm Password *"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
+            />
+            <input
+              type="text"
+              placeholder="Address *"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={loading}
+            />
+            <input
+              type="tel"
+              placeholder="Contact Number *"
+              value={contactNo}
+              onChange={(e) => setContactNo(e.target.value)}
+              disabled={loading}
+            />
+          </>
+        ) : (
+          <>
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+          </>
         )}
 
         <button
           className="login-btn"
           onClick={handleAuth}
-          disabled={loading}
+          disabled={loading || (isSignUp && (!email || !password || !confirmPassword || !firstName || !address || !contactNo))}
         >
           {isSignUp ? "Sign Up" : "Sign In"}
         </button>
